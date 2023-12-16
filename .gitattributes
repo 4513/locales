@@ -1,0 +1,11 @@
+.git/               export-ignore
+.github/            export-ignore
+.idea               export-ignore
+storage/            export-ignore
+tests/              export-ignore
+phpcs.xml.dist      export-ignore
+phpstan.neon.dist   export-ignore
+phpunit.xml.dist    export-ignore
+CONTRIBUTING.md     export-ignore
+CHANGELOG.md        export-ignore
+.gitattributes      export-ignore
