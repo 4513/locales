@@ -38,6 +38,8 @@
         <exclude name="SlevomatCodingStandard.Namespaces.FullyQualifiedGlobalConstants.NonFullyQualified"/>
         <exclude name="SlevomatCodingStandard.Exceptions.DisallowNonCapturingCatch.DisallowedNonCapturingCatch"/>
         <exclude name="SlevomatCodingStandard.Numbers.DisallowNumericLiteralSeparator.DisallowedNumericLiteralSeparator"/>
+        <exclude name="SlevomatCodingStandard.Functions.DisallowArrowFunction.DisallowedArrowFunction"/>
+        <exclude name="SlevomatCodingStandard.Complexity.Cognitive.ComplexityTooHigh"/>
     </rule>
     <rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes">
         <properties>
@@ -56,8 +58,8 @@
     <rule ref="SlevomatCodingStandard.Files.TypeNameMatchesFileName">
         <properties>
             <property name="rootNamespaces" type="array">
-                <element key="src" value="MiBo\Languages"/>
-                <element key="tests" value="MiBo\Languages\Tests"/>
+                <element key="src" value="MiBo\Locales"/>
+                <element key="tests" value="MiBo\Locales\Tests"/>
             </property>
         </properties>
     </rule>
@@ -66,12 +68,17 @@
     </rule>
     <rule ref="SlevomatCodingStandard.Files.FileLength.FileTooLong">
         <exclude-pattern>./tests/*</exclude-pattern>
+        <exclude-pattern>./src/LocaleTag*</exclude-pattern>
     </rule>
     <rule ref="SlevomatCodingStandard.Classes.ClassLength.ClassTooLong">
         <exclude-pattern>./tests/*</exclude-pattern>
+        <exclude-pattern>./src/LocaleTag*</exclude-pattern>
     </rule>
     <rule ref="SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator">
         <exclude-pattern>./tests/*</exclude-pattern>
+    </rule>
+    <rule ref="SlevomatCodingStandard.Files.LineLength.LineTooLong">
+        <exclude-pattern>./src/LocaleTag*</exclude-pattern>
     </rule>
     <rule ref="SlevomatCodingStandard.Attributes.AttributesOrder">
         <properties>

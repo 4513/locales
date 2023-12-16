@@ -2,3 +2,7 @@ parameters:
     level: 9
     paths:
         - src
+    ignoreErrors:
+        - '#.*subTags \(array\{[a-zA-Z0-9\:\-\|\,\<\> ]+\}\) does not accept array.*#'
+        - '#.*on left side of \?\? does not exist.#'
+        - "#Offset \\'[a-zA-Z0-9\\.]+\\' does not exist on array.*#"
