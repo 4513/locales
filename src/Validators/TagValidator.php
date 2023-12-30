@@ -20,8 +20,19 @@ use MiBo\Locales\LocaleTag;
  */
 final class TagValidator
 {
+    /**
+     * Validates the given locale tag.
+     *
+     * @param string $tag
+     *
+     * @return bool
+     */
     public static function validate(string $tag): bool
     {
+        if ($tag === '') {
+            return false;
+        }
+
         try {
             new LocaleTag($tag);
 

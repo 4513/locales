@@ -422,6 +422,7 @@ final class ValidatorTest extends TestCase
             ['de-419-DE'],
             ['a-DE'],
             ['ar-a-aaa-b-bbb-a-ccc'],
+            [''],
         ];
     }
 }

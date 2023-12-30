@@ -19,14 +19,13 @@ use function in_array;
  *
  * @since 0.1
  *
+ * @link https://datatracker.ietf.org/doc/html/rfc5646
+ *
  * @no-named-arguments Parameter names are not covered by the backward compatibility promise.
  */
 final class LocaleTag
 {
-    public const SEPARATOR_DASH = '-';
-    public const SEPARATOR_UNDERSCORE = '_';
-
-    public const GRANDFATHERED = [
+    private const GRANDFATHERED                = [
         'irregular' => [
             'en_GB_oed',
             'i_ami',
@@ -58,18 +57,20 @@ final class LocaleTag
             'zh_xiang',
         ],
     ];
+    private const REGEX_LANGTAG                = '/^((?P<ISO639>[a-zA-Z]{2,3}(?P<EXTLANG>(((\_[a-zA-Z]{3})|(\_[a-zA-Z]{3}){,2}))?))|(?P<LANG4>[a-zA-Z]{4})|(?P<LANG5>[a-zA-Z]{5,8}))(?P<ISO15924>(\_[a-zA-Z]{4})?)((?P<ISO3166A2>(\_[a-zA-Z]{2})?)|(?P<UNM49>(\_[0-9]{3})?))(?P<VARIANT>((\_[a-zA-Z0-9]{5,8})|(\_\d[a-zA-Z0-9]{3}))*)(?P<EXTENSION>(\_([0-9A-WY-Za-wy-z](\_[a-zA-Z0-9]{2,8})+))*)(?P<PRIVATE>((\_x(\_[a-zA-Z0-9]{1,8})+))?)$/';
 
-    private const TYPE_LANGTAG = 'langtag';
-    private const TYPE_PRIVATEUSE = 'privateuse';
-    private const TYPE_GRANDFATHERED_REGULAR = 'grandfathered-r';
+    private const REGEX_PRIVATEUSE             = '/^x(?P<PRIVATE>(\_[a-zA-Z\d]{1,8}))+$/';
+    private const SEPARATOR_DASH               = '-';
+    private const SEPARATOR_UNDERSCORE         = '_';
+    private const TYPE_LANGTAG                 = 'langtag';
+    private const TYPE_PRIVATEUSE              = 'privateuse';
+    private const TYPE_GRANDFATHERED_REGULAR   = 'grandfathered-r';
     private const TYPE_GRANDFATHERED_IRREGULAR = 'grandfathered-i';
 
-    private const REGEX_LANGTAG = '/^((?P<ISO639>[a-zA-Z]{2,3}(?P<EXTLANG>(((\_[a-zA-Z]{3})|(\_[a-zA-Z]{3}){,2}))?))|(?P<LANG4>[a-zA-Z]{4})|(?P<LANG5>[a-zA-Z]{5,8}))(?P<ISO15924>(\_[a-zA-Z]{4})?)((?P<ISO3166A2>(\_[a-zA-Z]{2})?)|(?P<UNM49>(\_[0-9]{3})?))(?P<VARIANT>((\_[a-zA-Z0-9]{5,8})|(\_\d[a-zA-Z0-9]{3}))*)(?P<EXTENSION>(\_([0-9A-WY-Za-wy-z](\_[a-zA-Z0-9]{2,8})+))*)(?P<PRIVATE>((\_x(\_[a-zA-Z0-9]{1,8})+))?)$/';
-
-    private const REGEX_PRIVATEUSE = '/^x(?P<PRIVATE>(\_[a-zA-Z\d]{1,8}))+$/';
-
     private string $type;
+
     private string $tag;
+
     private bool $usesUnderscore;
 
     /**
@@ -92,6 +93,9 @@ final class LocaleTag
         'variants' => [],
     ];
 
+    /**
+     * @param non-empty-string $tag
+     */
     public function __construct(string $tag)
     {
         $this->usesUnderscore = str_contains($tag, self::SEPARATOR_UNDERSCORE);
@@ -192,36 +196,56 @@ final class LocaleTag
         $this->purify();
     }
 
+    /**
+     * @return bool True if the tag is Grandfathered, false otherwise.
+     */
     #[Pure]
     public function isGrandfathered(): bool
     {
         return $this->isGrandfatheredIrregular() || $this->isGrandfatheredRegular();
     }
 
+    /**
+     * @return bool True if the tag is Grandfathered regular, false otherwise.
+     */
     #[Pure]
     public function isGrandfatheredRegular(): bool
     {
         return $this->type === self::TYPE_GRANDFATHERED_REGULAR;
     }
 
+    /**
+     * @return bool True if the tag is Grandfathered irregular, false otherwise.
+     */
     #[Pure]
     public function isGrandfatheredIrregular(): bool
     {
         return $this->type === self::TYPE_GRANDFATHERED_IRREGULAR;
     }
 
+    /**
+     * @return bool True if the tag is private use, false otherwise.
+     */
     #[Pure]
     public function isPrivateUse(): bool
     {
         return $this->type === self::TYPE_PRIVATEUSE;
     }
 
+    /**
+     * @return bool True if the tag is langtag, false otherwise.
+     */
     #[Pure]
     public function isLangTag(): bool
     {
         return $this->type === self::TYPE_LANGTAG;
     }
 
+    /**
+     * Convert the tag to use underscore instead of dash.
+     *
+     * @return static
+     */
     public function useUnderscore(): self
     {
         $this->usesUnderscore = true;
@@ -231,6 +255,11 @@ final class LocaleTag
         return $this;
     }
 
+    /**
+     * Convert the tag to use dash instead of underscore.
+     *
+     * @return static
+     */
     public function useDash(): self
     {
         $this->usesUnderscore = false;
@@ -240,6 +269,21 @@ final class LocaleTag
         return $this;
     }
 
+    /**
+     * Returns a language subtag from the tag.
+     *
+     * The language is one of:
+     * * ISO 639 Alpha 2 code, or;
+     * * ISO 639 Alpha 3 code, or;
+     * * ISO 639 Alpha 2 code with extended lang separated by separator, or;
+     * * ISO 639 Alpha 3 code with extended lang separated by separator, or;
+     * * Alpha 4 for reserved future use, or;
+     * * Alpha 5–8 for registered language.
+     *
+     * @return non-empty-string Language subtag.
+     *
+     * @throws \MiBo\Locales\Exceptions\NotNormalLangTagException
+     */
     public function getLanguage(): string
     {
         if ($this->isGrandfathered() || $this->isPrivateUse()) {
@@ -250,6 +294,16 @@ final class LocaleTag
         return $this->subTags['language'];
     }
 
+    /**
+     * Returns an extended language subtag.
+     *
+     * Selected ISO 639 codes (Alpha 3) with none or up to two 3 Alpha codes separated by separator.
+     *
+     * @return non-empty-string Extended language subtag.
+     *
+     * @throws \MiBo\Locales\Exceptions\NotNormalLangTagException
+     * @throws \MiBo\Locales\Exceptions\MissingSubTagException
+     */
     public function getExtLang(): string
     {
         if ($this->isGrandfathered() || $this->isPrivateUse()) {
@@ -263,6 +317,16 @@ final class LocaleTag
         return $this->subTags['language.extlang'];
     }
 
+    /**
+     * Returns a script subtag.
+     *
+     * ISO 15924 code.
+     *
+     * @return non-empty-string Script subtag.
+     *
+     * @throws \MiBo\Locales\Exceptions\NotNormalLangTagException
+     * @throws \MiBo\Locales\Exceptions\MissingSubTagException
+     */
     public function getScript(): string
     {
         if ($this->isGrandfathered() || $this->isPrivateUse()) {
@@ -276,6 +340,16 @@ final class LocaleTag
         return $this->subTags['script'];
     }
 
+    /**
+     * Returns a region subtag.
+     *
+     * ISO 3166-1 Alpha 2 code or UN M.49 code (3 digits).
+     *
+     * @return non-empty-string|numeric-string Region subtag.
+     *
+     * @throws \MiBo\Locales\Exceptions\NotNormalLangTagException
+     * @throws \MiBo\Locales\Exceptions\MissingSubTagException
+     */
     public function getRegion(): string
     {
         if ($this->isGrandfathered() || $this->isPrivateUse()) {
@@ -290,7 +364,14 @@ final class LocaleTag
     }
 
     /**
-     * @return non-empty-array<non-empty-string>
+     * Returns a list of variant subtags.
+     *
+     * Registered variants.
+     *
+     * @return non-empty-array<non-empty-string> Variants subtags.
+     *
+     * @throws \MiBo\Locales\Exceptions\NotNormalLangTagException
+     * @throws \MiBo\Locales\Exceptions\MissingSubTagException
      */
     public function getVariants(): array
     {
@@ -306,7 +387,14 @@ final class LocaleTag
     }
 
     /**
-     * @return non-empty-array<non-empty-string>
+     * Returns a list of extension subtags.
+     *
+     * Registered extensions.
+     *
+     * @return non-empty-array<non-empty-string> List of extensions subtags.
+     *
+     * @throws \MiBo\Locales\Exceptions\NotNormalLangTagException
+     * @throws \MiBo\Locales\Exceptions\MissingSubTagException
      */
     public function getExtensions(): array
     {
@@ -328,6 +416,16 @@ final class LocaleTag
         return $list;
     }
 
+    /**
+     * Returns an extension subtag.
+     *
+     * @param non-empty-string $extension Extension subtag.
+     *
+     * @return non-empty-string Extension subtag.
+     *
+     * @throws \MiBo\Locales\Exceptions\NotNormalLangTagException
+     * @throws \MiBo\Locales\Exceptions\MissingSubTagException
+     */
     public function getExtension(string $extension): string
     {
         if ($this->isGrandfathered() || $this->isPrivateUse()) {
@@ -341,6 +439,14 @@ final class LocaleTag
         return $extension . $this->subTags['extensions'][$extension];
     }
 
+    /**
+     * Returns a private use subtag.
+     *
+     * @return non-empty-string Private use subtag.
+     *
+     * @throws \MiBo\Locales\Exceptions\NotNormalLangTagException
+     * @throws \MiBo\Locales\Exceptions\MissingSubTagException
+     */
     public function getPrivateUse(): string
     {
         if ($this->isGrandfathered()) {
@@ -357,13 +463,20 @@ final class LocaleTag
             );
     }
 
+    /**
+     * @return non-empty-string Tag.
+     */
     public function getTag(): string
     {
         return $this->format();
     }
 
+    /**
+     * @return non-empty-string Tag.
+     */
     public function format(): string
     {
+        /** @phpstan-var non-empty-string */
         return str_replace('_', $this->usesUnderscore ? self::SEPARATOR_UNDERSCORE : self::SEPARATOR_DASH, $this->tag);
     }
 
